@@ -7,8 +7,11 @@
 from datetime import datetime
 import pytz
 import os
-from telegram import Update
+from telegram import Update, constants, helpers as h, MessageEntity as me
 from telegram.ext import Application, ContextTypes, MessageHandler, filters
+
+POST_AS_NEW_MSG = True
+DISABLE_MSG_NOTIFICATION = True
 
 def get_bot_token() -> str:
     return os.environ.get('BT_TELEGRAM_CNL_REP_BOT_TOKEN').strip()
@@ -28,14 +31,27 @@ def get_iso_rome_datetime() -> str:
     now = datetime.now(rome_tz).isoformat()
     return now[:19].replace("T", " ")
 
+def escape_msg_text(msg: str) -> str:
+    return h.escape_markdown(msg, 2, me.ALL_TYPES)
+
 async def forward(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.channel_post
     if message:
-        print("[" + get_iso_rome_datetime() + "] Msg received: " + message.text + " from " + str(message.chat_id))
-        if message.chat_id == ORIGIN_CHANNEL_ID:
-            await context.bot.forward_message(chat_id=DESTINATION_CHANNEL_ID,
-                                        from_chat_id=ORIGIN_CHANNEL_ID,
-                                        message_id=message.message_id)
+        if (message.chat_id == ORIGIN_CHANNEL_ID) and message.text:
+            print("[" + get_iso_rome_datetime() + "] Msg received: " + message.text + " from " + str(message.chat_id))
+            if POST_AS_NEW_MSG:
+                await context.bot.send_message  (
+                                                    chat_id = DESTINATION_CHANNEL_ID,
+                                                    text = escape_msg_text(message.text),
+                                                    parse_mode = constants.ParseMode.MARKDOWN_V2,
+                                                    disable_notification = DISABLE_MSG_NOTIFICATION
+                                                )
+            else:
+                await context.bot.forward_message   (
+                                                        chat_id = DESTINATION_CHANNEL_ID,
+                                                        from_chat_id = ORIGIN_CHANNEL_ID,
+                                                        message_id = message.message_id
+                                                    )
 
 def main() -> None:
     """Start the bot."""
