@@ -12,6 +12,7 @@ from telegram.ext import Application, ContextTypes, MessageHandler, filters
 
 POST_AS_NEW_MSG = True
 DISABLE_MSG_NOTIFICATION = True
+MSG_SIGNATURE = " \n\n----- \nCanale 👉 T.ME/SCIENZACOSCIENZA \nInformazione LIBERA per la Nuova Umanità💚 \n"
 
 def get_bot_token() -> str:
     return os.environ.get('BT_TELEGRAM_CNL_REP_BOT_TOKEN').strip()
@@ -42,7 +43,7 @@ async def forward(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if POST_AS_NEW_MSG:
                 await context.bot.send_message  (
                                                     chat_id = DESTINATION_CHANNEL_ID,
-                                                    text = escape_msg_text(message.text),
+                                                    text = escape_msg_text(message.text + MSG_SIGNATURE),
                                                     parse_mode = constants.ParseMode.MARKDOWN_V2,
                                                     disable_notification = DISABLE_MSG_NOTIFICATION
                                                 )
