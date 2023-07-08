@@ -4,6 +4,7 @@
 # Per conoscere l'ID di un canale: https://t.me/getidsbot
 #########################################################
 
+from typing import Optional
 from datetime import datetime
 import pytz
 import os
@@ -13,7 +14,7 @@ import io
 
 POST_AS_NEW_MSG = True
 DISABLE_MSG_NOTIFICATION = True
-MSG_SIGNATURE = " \n\n----- \nCanale 👉 T.ME/SCIENZACOSCIENZA \nInformazione LIBERA per la Nuova Umanità💚 \n"
+MSG_SIGNATURE: str = " \n\n----- \nCanale 👉 T.ME/SCIENZACOSCIENZA \nInformazione LIBERA per la Nuova Umanità💚 \n"
 
 def get_bot_token() -> str:
     return os.environ.get('BT_TELEGRAM_CNL_REP_BOT_TOKEN').strip()
@@ -28,13 +29,26 @@ TOKEN = get_bot_token()
 ORIGIN_CHANNEL_ID = get_origin_channel_id()
 DESTINATION_CHANNEL_ID = get_destination_channel_id()
 
+def filter_post_desc(desc: Optional[str], max_len: int = constants.MessageLimit.CAPTION_LENGTH) -> Optional[str]:
+    if desc == None:
+        return filter_post_desc('')
+    else:
+        if len(desc) > max_len:
+            return None
+        else:
+            if (max_len - len(desc)) >= len(MSG_SIGNATURE):
+                return escape_msg_text(desc + MSG_SIGNATURE)
+            else:
+                return escape_msg_text(desc)
+
 def get_iso_rome_datetime() -> str:
     rome_tz = pytz.timezone('Europe/Rome')
     now = datetime.now(rome_tz).isoformat()
     return now[:19].replace("T", " ")
 
 def escape_msg_text(msg: str) -> str:
-    return h.escape_markdown(msg, 2, me.ALL_TYPES)
+    #return h.escape_markdown(msg, 2, me.ALL_TYPES)
+    return msg
 
 async def forward(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = update.channel_post
@@ -48,8 +62,8 @@ async def forward(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     file_id = message.photo[-1].file_id  # -1 to get the photo of the best quality
                     if file_id:
                         print("[" + get_iso_rome_datetime() + "] Msg received with IMAGE from " + str(message.chat_id))
-                        caption = message.caption
-                        if caption and (len(caption) > constants.MessageLimit.CAPTION_LENGTH):
+                        caption = filter_post_desc(message.caption)
+                        if caption == None:
                             print("[" + get_iso_rome_datetime() + "] [ERROR] Image caption too long. Post not sent.")
                             return None
 
@@ -65,6 +79,7 @@ async def forward(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                                                             chat_id = DESTINATION_CHANNEL_ID, 
                                                             photo = photo_data, 
                                                             caption = caption,
+                                                            caption_entities = message.caption_entities,
                                                             disable_notification = DISABLE_MSG_NOTIFICATION
                                                         )
                         return None
@@ -76,16 +91,17 @@ async def forward(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     file_id = message.animation.file_id
                     if file_id:
                         print("[" + get_iso_rome_datetime() + "] Msg received with ANIMATION from " + str(message.chat_id))
-                        caption = message.caption
-                        if caption and (len(caption) > constants.MessageLimit.CAPTION_LENGTH):
+                        caption = filter_post_desc(message.caption)
+                        if caption == None:
                             print("[" + get_iso_rome_datetime() + "] [ERROR] Animation caption too long. Post not sent.")
                             return None
                         await context.bot.send_animation    (
-                                                            chat_id = DESTINATION_CHANNEL_ID, 
-                                                            animation = message.animation, 
-                                                            caption = caption,
-                                                            disable_notification = DISABLE_MSG_NOTIFICATION
-                                                        ) 
+                                                                chat_id = DESTINATION_CHANNEL_ID, 
+                                                                animation = message.animation, 
+                                                                caption = caption,
+                                                                caption_entities = message.caption_entities,
+                                                                disable_notification = DISABLE_MSG_NOTIFICATION
+                                                            ) 
                         return None
 
             ################################
@@ -95,14 +111,15 @@ async def forward(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     file_id = message.document.file_id
                     if file_id:
                         print("[" + get_iso_rome_datetime() + "] Msg received with FILE from " + str(message.chat_id))
-                        caption = message.caption
-                        if caption and (len(caption) > constants.MessageLimit.CAPTION_LENGTH):
+                        caption = filter_post_desc(message.caption)
+                        if caption == None:
                             print("[" + get_iso_rome_datetime() + "] [ERROR] File caption too long. Post not sent.")
                             return None
                         await context.bot.send_document (
                                                             chat_id = DESTINATION_CHANNEL_ID, 
                                                             document = message.document, 
                                                             caption = caption,
+                                                            caption_entities = message.caption_entities,
                                                             disable_notification = DISABLE_MSG_NOTIFICATION
                                                         )                        
                         return None
@@ -114,14 +131,15 @@ async def forward(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     file_id = message.voice.file_id
                     if file_id:
                         print("[" + get_iso_rome_datetime() + "] Msg received with VOCAL from " + str(message.chat_id))
-                        caption = message.caption
-                        if caption and (len(caption) > constants.MessageLimit.CAPTION_LENGTH):
+                        caption = filter_post_desc(message.caption)
+                        if caption == None:
                             print("[" + get_iso_rome_datetime() + "] [ERROR] Vocal caption too long. Post not sent.")
                             return None
                         await context.bot.send_voice    (
                                                             chat_id = DESTINATION_CHANNEL_ID, 
                                                             voice = message.voice, 
                                                             caption = caption,
+                                                            caption_entities = message.caption_entities,
                                                             disable_notification = DISABLE_MSG_NOTIFICATION
                                                         )                        
                         return None
@@ -133,8 +151,8 @@ async def forward(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     file_id = message.audio.file_id
                     if file_id:
                         print("[" + get_iso_rome_datetime() + "] Msg received with AUDIO from " + str(message.chat_id))
-                        caption = message.caption
-                        if caption and (len(caption) > constants.MessageLimit.CAPTION_LENGTH):
+                        caption = filter_post_desc(message.caption)
+                        if caption == None:
                             print("[" + get_iso_rome_datetime() + "] [ERROR] Audio caption too long. Post not sent.")
                             return None
                         await context.bot.send_audio    (
@@ -142,6 +160,7 @@ async def forward(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                                                             audio = message.audio, 
                                                             title = message.audio.title, 
                                                             caption = caption,
+                                                            caption_entities = message.caption_entities,
                                                             disable_notification = DISABLE_MSG_NOTIFICATION
                                                         ) 
                         return None
@@ -153,14 +172,15 @@ async def forward(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     file_id = message.video.file_id
                     if file_id:
                         print("[" + get_iso_rome_datetime() + "] Msg received with VIDEO from " + str(message.chat_id))
-                        caption = message.caption
-                        if caption and (len(caption) > constants.MessageLimit.CAPTION_LENGTH):
+                        caption = filter_post_desc(message.caption)
+                        if caption == None:
                             print("[" + get_iso_rome_datetime() + "] [ERROR] Audio caption too long. Post not sent.")
                             return None
                         await context.bot.send_video    (
                                                             chat_id = DESTINATION_CHANNEL_ID, 
                                                             video = message.video, 
                                                             caption = caption,
+                                                            caption_entities = message.caption_entities,
                                                             disable_notification = DISABLE_MSG_NOTIFICATION
                                                         ) 
                         return None
@@ -170,13 +190,14 @@ async def forward(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             ################################
                 if message.text:
                     print("[" + get_iso_rome_datetime() + "] Msg received: " + message.text + " from " + str(message.chat_id))
-                    if len(message.text) > constants.MessageLimit.MAX_TEXT_LENGTH:
+                    msg = filter_post_desc(message.text, constants.MessageLimit.MAX_TEXT_LENGTH)
+                    if msg == None:
                         print("[" + get_iso_rome_datetime() + "] [ERROR] Text too long. Post not sent.")
                         return None
                     await context.bot.send_message  (
                                                         chat_id = DESTINATION_CHANNEL_ID,
-                                                        text = escape_msg_text(message.text + MSG_SIGNATURE),
-                                                        parse_mode = constants.ParseMode.MARKDOWN_V2,
+                                                        text = msg,
+                                                        entities = message.entities,
                                                         disable_notification = DISABLE_MSG_NOTIFICATION
                                                     )
                     return None
